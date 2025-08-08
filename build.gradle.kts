@@ -1,25 +1,25 @@
 plugins {
-    `java`
-}
-
-val neoforgeVersion: String by project
-
-repositories {
-    maven { url = uri("https://maven.neoforged.net/releases/") }
-    mavenCentral()
-}
-
-dependencies {
-    implementation("net.neoforged:neoforge:${neoforgeVersion}")
-    implementation("com.google.code.gson:gson:2.10.1")
+    id 'java'
 }
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-tasks.register<Copy>("prepareJar") {
-    dependsOn("jar")
+repositories {
+    mavenCentral()
+    maven {
+        name = "NeoForge"
+        url = "https://maven.neoforged.net/releases"
+    }
+}
+
+dependencies {
+    minecraft "net.neoforged:neoforge:21.1.121"
+}
+
+minecraft {
+    // Configuration spécifique à NeoForge ModDev
 }
