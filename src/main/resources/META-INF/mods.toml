@@ -1,0 +1,9 @@
+modLoader = "neoforge"
+loaderVersion = "[21,22)"
+license = "MIT"
+[[mods]]
+modId = "neoforgeeconomy"
+version = "1.0.0"
+displayName = "NeoForge Economy"
+description = "Economy mod with shop that accepts modded blocks/items."
+authors = [ "Toi" ]
