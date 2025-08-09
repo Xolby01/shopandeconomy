@@ -1,10 +1,10 @@
 plugins {
-    id 'java'
+    id("java")
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
@@ -12,14 +12,20 @@ repositories {
     mavenCentral()
     maven {
         name = "NeoForge"
-        url = "https://maven.neoforged.net/releases"
+        url = uri("https://maven.neoforged.net/releases")
     }
 }
 
 dependencies {
-    minecraft "net.neoforged:neoforge:21.1.121"
+    implementation("net.neoforged:neoforge:21.1.121")
 }
 
-minecraft {
-    // Configuration spécifique à NeoForge ModDev
+tasks.jar {
+    archiveBaseName.set("ShopAndEconomy")
+    archiveVersion.set("1.0.0")
+    manifest {
+        attributes["ModId"] = "shopandeconomy"
+        attributes["Implementation-Title"] = "Shop and Economy Mod"
+        attributes["Implementation-Version"] = archiveVersion.get()
+    }
 }
