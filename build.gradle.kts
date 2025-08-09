@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("net.neoforged.gradle") version "6.0.20" // plugin officiel NeoForge Gradle
 }
 
 java {
@@ -17,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    implementation("net.neoforged:neoforge:21.1.121")
+    minecraft("net.neoforged:neoforge:21.1.121") // et pas implementation()
     implementation("com.google.code.gson:gson:2.10.1")
 }
 
