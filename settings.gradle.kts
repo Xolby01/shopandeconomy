@@ -1,1 +1,9 @@
 rootProject.name = "shopandeconomy"
+
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven("https://maven.neoforged.net/releases")
+    }
+}
