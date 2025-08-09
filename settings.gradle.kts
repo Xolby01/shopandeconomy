@@ -1,1 +1,1 @@
-rootProject.name = "neoforge-economy"
+rootProject.name = "shopandeconomy"

@@ -18,6 +18,7 @@ repositories {
 
 dependencies {
     implementation("net.neoforged:neoforge:21.1.121")
+    implementation("com.google.code.gson:gson:2.10.1")
 }
 
 tasks.jar {

@@ -1,13 +1,19 @@
-# NeoForge Economy (1.21.1) - Complete
+# ShopAndEconomy - ready build package
 
-Ce projet contient un mod NeoForge minimal mais fonctionnel pour la version 1.21.1.
+This package contains a corrected `build.gradle.kts` (Kotlin DSL) and a GitHub Actions workflow configured to build with Java 21 for NeoForge 1.21.1.
 
-## Fonctionnalités
-- Monnaie par joueur (sauvegardée en `config/neoforge-economy/balances.json`)
-- Commandes : `/topmoney`, `/pay`, `/shop`, `/trade`, `/accepttrade`
-- Boutique GUI serveur acceptant ItemStack (donc items moddés)
+Important notes:
+- It's best to commit the Gradle Wrapper (`gradlew`, `gradlew.bat` and `gradle/wrapper/*`) into the repo.
+- If you don't include the wrapper, the workflow will attempt to install Gradle via sdkman on the runner.
+- Before pushing, you can generate the wrapper locally (recommended) with:
+  - `./gradlew wrapper` (on Linux/macOS) or `gradle wrapper` if gradle is installed.
+  - Commit `gradlew`, `gradlew.bat` and `gradle/wrapper/gradle-wrapper.jar` and `gradle/wrapper/gradle-wrapper.properties`.
 
-## Build
-1. Pousse ce repo sur GitHub (branche main)
-2. Le workflow GitHub Actions compilera automatiquement et publiera l'artifact
+How to use:
+1. Add your mod source under `src/main/java` and resources under `src/main/resources`.
+2. Commit & push to GitHub `main` branch.
+3. Go to Actions → watch the build. Download artifact `mod-jar` when finished.
 
+If you want, I can now:
+- add the complete mod source into this package (commands, shop, etc.), or
+- attempt to generate the Gradle wrapper files here (might be limited).
