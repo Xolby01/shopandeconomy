@@ -1,91 +1,66 @@
 package net.example.economy.shop;
 
-import net.minecraft.network.FriendlyByteBuf;
+import net.example.economy.EconomyMod;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.example.economy.MoneyManager;
-import java.util.List;
-import java.util.Optional;
 
-/**
- * Server-side shop handler. Uses ShopItemsManager and MoneyManager.
- */
 public class ShopHandler {
-    private static final ShopItemsManager itemsManager = new ShopItemsManager();
 
+    /** Ouvre (placeholder) l’UI du shop. UI cliquable désactivée tant que le networking n’est pas remis. */
     public static void openShopFor(ServerPlayer player) {
-        List<ShopItemsManager.Entry> entries = itemsManager.getItems();
-        // send a packet to client to open the screen with entries (simple approach)
-        // Here we open a menu provider so the client can trigger client-side screen if desired
-        player.openMenu(new net.minecraft.world.inventory.MenuProvider() {
-            @Override
-            public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int windowId, net.minecraft.world.entity.player.Inventory playerInventory, FriendlyByteBuf data) {
-                return new ShopMenu(windowId, playerInventory, entries);
+        player.sendSystemMessage(Component.literal("Shop: interface temporairement désactivée (pas de networking)."));
+    }
+
+    /** Prix d’un ItemStack pour la vente (exemple minimal) */
+    public static long getPrice(ItemStack stack) {
+        // Exemple minimal : 1 unité = 1 crédit ; adapte à partir de ta config si besoin
+        return stack.getCount();
+    }
+
+    /** Achat (exemple minimal) : vérifie le solde puis ajoute l’item. */
+    public static boolean buyItem(ServerPlayer player, Item item, int amount, long unitPrice) {
+        long total = Math.max(0L, unitPrice) * Math.max(1, amount);
+        if (!EconomyMod.moneyManager.withdraw(player.getUUID(), total)) {
+            player.sendSystemMessage(Component.literal("Fonds insuffisants."));
+            return false;
+        }
+        player.getInventory().add(new ItemStack(item, amount));
+        EconomyMod.moneyManager.save();
+        player.sendSystemMessage(Component.literal("Achat réussi : " + item.toString() + " x" + amount + " pour " + total));
+        return true;
+    }
+
+    /** Vente (exemple minimal) : enlève exactement `amount` items correspondants puis crédite. */
+    public static boolean sellItem(ServerPlayer player, Item item, int amount, long unitPrice) {
+        int removed = removeFromInventory(player.getInventory(), item, amount);
+        if (removed <= 0) {
+            player.sendSystemMessage(Component.literal("Tu n’as pas cet objet en inventaire."));
+            return false;
+        }
+        long total = Math.max(0L, unitPrice) * removed;
+        EconomyMod.moneyManager.deposit(player.getUUID(), total);
+        EconomyMod.moneyManager.save();
+        player.sendSystemMessage(Component.literal("Vente réussie : " + item.toString() + " x" + removed + " pour " + total));
+        return true;
+    }
+
+    /** Helper 1.21.1 : suppression d’items par itération d’inventaire (évite la vieille signature removeItem(Item,int)). */
+    private static int removeFromInventory(Inventory inv, Item item, int amount) {
+        int toRemove = Math.max(1, amount);
+        int removed = 0;
+        for (int slot = 0; slot < inv.getContainerSize() && toRemove > 0; slot++) {
+            ItemStack s = inv.getItem(slot);
+            if (!s.isEmpty() && s.getItem() == item) {
+                int take = Math.min(s.getCount(), toRemove);
+                s.shrink(take);
+                if (s.getCount() <= 0) inv.setItem(slot, ItemStack.EMPTY);
+                toRemove -= take;
+                removed += take;
             }
-
-            @Override
-            public Component getDisplayName() {
-                return Component.literal("Economy Shop");
-            }
-        });
-    }
-
-    public static void handleBuy(ServerPlayer player, String registryName, int amount) {
-        Optional<ItemStack> maybe = ShopItemsManager.toStack(registryName);
-        if (maybe.isEmpty()) {
-            player.sendSystemMessage(Component.literal("Article introuvable."));
-            return;
         }
-        ItemStack stack = maybe.get();
-        long pricePer = findBuyPrice(registryName);
-        if (pricePer <= 0) {
-            player.sendSystemMessage(Component.literal("Cet item n'est pas en vente."));
-            return;
+        return removed;
         }
-        long total = pricePer * amount;
-        MoneyManager mm = new MoneyManager(); // recommend singleton instead
-        if (!mm.withdraw(player.getUUID(), total)) {
-            player.sendSystemMessage(Component.literal("Tu n'as pas assez d'argent."));
-            return;
-        }
-        stack.setCount(Math.min(stack.getMaxStackSize(), amount));
-        player.addItem(stack);
-        player.sendSystemMessage(Component.literal("Achat réussi : " + stack.getHoverName().getString() + " x" + amount + " pour " + total));
-        mm.save();
-    }
-
-    public static void handleSell(ServerPlayer player, String registryName, int amount) {
-        Optional<ItemStack> maybe = ShopItemsManager.toStack(registryName);
-        if (maybe.isEmpty()) {
-            player.sendSystemMessage(Component.literal("Article introuvable."));
-            return;
-        }
-        ItemStack proto = maybe.get();
-        long sellPrice = findSellPrice(registryName);
-        if (sellPrice <= 0) {
-            player.sendSystemMessage(Component.literal("Cet item ne peut pas être vendu."));
-            return;
-        }
-        int removed = player.getInventory().removeItem(proto.getItem(), amount);
-        if (removed == 0) {
-            player.sendSystemMessage(Component.literal("Tu n'as pas cet item en inventaire."));
-            return;
-        }
-        long total = sellPrice * removed;
-        MoneyManager mm = new MoneyManager();
-        mm.deposit(player.getUUID(), total);
-        player.sendSystemMessage(Component.literal("Vendu x" + removed + " pour " + total));
-        mm.save();
-    }
-
-    private static long findBuyPrice(String registryName) {
-        for (ShopItemsManager.Entry e : itemsManager.getItems()) if (e.item.equals(registryName)) return e.buy_price;
-        return -1;
-    }
-
-    private static long findSellPrice(String registryName) {
-        for (ShopItemsManager.Entry e : itemsManager.getItems()) if (e.item.equals(registryName)) return e.sell_price;
-        return -1;
-    }
 }
