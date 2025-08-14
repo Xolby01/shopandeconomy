@@ -1,30 +1,30 @@
 package net.example.economy.shop;
 
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ShopMenu extends AbstractContainerMenu {
+    private final Inventory playerInv;
     private final List<ShopItemsManager.Entry> entries;
-    private final Player player;
 
-    public ShopMenu(int id, Inventory playerInventory, List<ShopItemsManager.Entry> entries) {
-        super(MenuType.GENERIC_9x1, id);
-        this.entries = entries;
-        this.player = playerInventory.player;
+    // Constructeur simple si tu n'as pas les entrées à ce moment-là
+    public ShopMenu(int id, Inventory inv) {
+        this(id, inv, Collections.emptyList());
     }
 
-    public ShopMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-        this(id, inv, new ShopItemsManager().getItems());
-    }
-
-    @Override
-    public boolean stillValid(Player p) {
-        return true;
+    // Constructeur principal
+    public ShopMenu(int id, Inventory inv, List<ShopItemsManager.Entry> entries) {
+        // Pour compiler sans type de menu enregistré, on utilise un type vanilla existant.
+        // À terme tu peux enregistrer ton propre MenuType custom.
+        super(MenuType.GENERIC_9x3, id);
+        this.playerInv = inv;
+        this.entries = entries != null ? entries : Collections.emptyList();
     }
 
     public List<ShopItemsManager.Entry> getEntries() {
@@ -32,7 +32,12 @@ public class ShopMenu extends AbstractContainerMenu {
     }
 
     @Override
-    public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player player, int index) {
-        return net.minecraft.world.item.ItemStack.EMPTY;
+    public boolean stillValid(Player player) {
+        return true;
+    }
+
+    @Override
+    public ItemStack quickMoveStack(Player player, int index) {
+        return ItemStack.EMPTY;
     }
 }
