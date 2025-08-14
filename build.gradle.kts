@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation("net.neoforged:neoforge:21.1.121")
+    implementation("net.neoforged:neoforge:${neo_version}")
 }
 
 tasks.jar {
