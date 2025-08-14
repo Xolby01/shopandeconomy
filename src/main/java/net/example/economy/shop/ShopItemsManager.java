@@ -85,7 +85,7 @@ public class ShopItemsManager {
                 ns = parts[0];
                 path = parts[1];
             }
-            ResourceLocation rl = new ResourceLocation(ns, path);
+            net.minecraft.resources.ResourceLocation rl = new net.minecraft.resources.ResourceLocation(ns, path);
             Item it = BuiltInRegistries.ITEM.get(rl);
             if (it == null) return Optional.empty();
             return Optional.of(new ItemStack(it));
@@ -94,4 +94,4 @@ public class ShopItemsManager {
         }
     }
 }
-}
+

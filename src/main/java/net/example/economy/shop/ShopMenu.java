@@ -29,10 +29,9 @@ public class ShopMenu extends AbstractContainerMenu {
 
     public List<ShopItemsManager.Entry> getEntries() {
         return entries;
-    }
-
+    
     @Override
-    public net.minecraft.world.item.ItemStack quickMoveStack(Player player, int index) {
+    public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player player, int index) {
         return net.minecraft.world.item.ItemStack.EMPTY;
     }
 }

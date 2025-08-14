@@ -22,7 +22,6 @@ public class MoneyManager {
     public void add(UUID id, long amount) { set(id, get(id) + amount); }
     public boolean withdraw(UUID id, long amount) { long cur = get(id); if (cur < amount) return false; set(id, cur - amount); return true; }
 
-    // Aliases used elsewhere in project
     public void deposit(UUID id, long amount) { add(id, amount); }
     public void save() { persist(); }
 

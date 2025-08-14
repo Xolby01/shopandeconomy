@@ -21,7 +21,7 @@ public class AcceptTradeCommand {
             net.minecraft.server.MinecraftServer server = accepter.getServer();
             if (server != null) {
                 var inviter = server.getPlayerList().getPlayer(inviterId);
-                if (inviter != null) inviter.sendSystemMessage(Component.literal(accepter.getScoreboardName() + " a accepté ton invitation.")));
+                if (inviter != null) inviter.sendSystemMessage(Component.literal(accepter.getScoreboardName() + " a accepté ton invitation."), inviter.getUUID();
             }
             return 1;
         }));
