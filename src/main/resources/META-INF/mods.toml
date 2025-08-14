@@ -1,0 +1,10 @@
+modLoader = "neoforge"
+loaderVersion = "[21,22)"
+license = "MIT"
+
+[[mods]]
+modId = "shopandeconomy"
+version = "1.0.0"
+displayName = "Shop & Economy"
+description = "Economy mod (shop accepts modded blocks), commands: /topmoney /pay /shop /trade"
+authors = [ "Generated" ]
