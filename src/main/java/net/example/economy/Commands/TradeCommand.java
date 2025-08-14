@@ -17,7 +17,7 @@ public class TradeCommand {
                 ServerPlayer target = EntityArgument.getPlayer(ctx, "target");
                 EconomyMod.tradeManager.invite(sender.getUUID(), target.getUUID());
                 target.sendSystemMessage(Component.literal(sender.getScoreboardName() + " te propose un trade. Tape /accepttrade pour accepter."), target.getUUID();
-                sender.sendSystemMessage(Component.literal("Invitation envoyée à " + target.getScoreboardName()), sender.getUUID();
+                sender.sendSystemMessage(Component.literal("Invitation envoyée à " + target.getScoreboardName());, sender.getUUID();
                 return 1;
             })));
     }

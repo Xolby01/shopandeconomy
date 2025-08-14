@@ -6,13 +6,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.EventBusSubscriber;
 
 @EventBusSubscriber(modid = "shopandeconomy", bus = EventBusSubscriber.Bus.GAME, value = Dist.DEDICATED_SERVER)
-
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.api.distmarker.Dist;
-
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.DEDICATED_SERVER)
 public class RegisterCommands {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
