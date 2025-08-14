@@ -19,10 +19,8 @@ public class TopMoneyCommand {
             }
             int i = 1;
             for (Map.Entry<UUID, Long> e : top.entrySet()) {
-                ctx.getSource().sendSuccess(
-                    () -> Component.literal(i + ". " + e.getKey() + " -> " + e.getValue()),
-                    false
-                );
+                final String line = i + ". " + e.getKey() + " -> " + e.getValue();
+                ctx.getSource().sendSuccess(() -> Component.literal(line), false);
                 i++;
             }
             return 1;
