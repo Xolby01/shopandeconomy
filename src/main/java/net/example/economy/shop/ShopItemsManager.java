@@ -2,9 +2,9 @@ package net.example.economy.shop;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -18,62 +18,40 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Reads shop items from config/shopandeconomy/shop_items.json
- */
 public class ShopItemsManager {
-    public static final Path CONFIG_DIR = Path.of("config", "shopandeconomy");
-    public static final Path SHOP_FILE = CONFIG_DIR.resolve("shop_items.json");
-    private static final Gson GSON = new Gson();
 
     public static class Entry {
-        public String item;
-        public long buy_price = 0;
-        public long sell_price = 0;
+        public String item = "minecraft:stone";
+        public long buy_price = 10;
+        public long sell_price = 5;
     }
 
-    private final List<Entry> items = new ArrayList<>();
+    private static final Gson GSON = new Gson();
+    private static final Type LIST_TYPE = new TypeToken<List<Entry>>() {}.getType();
 
-    public ShopItemsManager() {
+    public static List<Entry> load(Path file) {
         try {
-            if (!Files.exists(CONFIG_DIR)) Files.createDirectories(CONFIG_DIR);
-            if (!Files.exists(SHOP_FILE)) {
-                List<Entry> example = new ArrayList<>();
-                Entry e1 = new Entry();
-                e1.item = "minecraft:diamond";
-                e1.buy_price = 100;
-                e1.sell_price = 50;
-                example.add(e1);
-                Entry e2 = new Entry();
-                e2.item = "minecraft:emerald";
-                e2.buy_price = 250;
-                e2.sell_price = 125;
-                example.add(e2);
-                try (Writer w = Files.newBufferedWriter(SHOP_FILE)) {
-                    GSON.toJson(example, w);
+            if (Files.exists(file)) {
+                try (Reader r = Files.newBufferedReader(file)) {
+                    List<Entry> list = GSON.fromJson(r, LIST_TYPE);
+                    return list != null ? list : new ArrayList<>();
                 }
             }
-            load();
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+        return new ArrayList<>();
     }
 
-    public synchronized void load() {
-        try (Reader r = Files.newBufferedReader(SHOP_FILE)) {
-            Type t = new TypeToken<List<Entry>>(){}.getType();
-            List<Entry> read = GSON.fromJson(r, t);
-            if (read != null) {
-                items.clear();
-                items.addAll(read);
+    public static void save(List<Entry> entries, Path file) {
+        try {
+            Files.createDirectories(file.getParent());
+            try (Writer w = Files.newBufferedWriter(file)) {
+                GSON.toJson(entries, LIST_TYPE, w);
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-    }
-
-    public synchronized List<Entry> getItems() {
-        return new ArrayList<>(items);
     }
 
     public static Optional<ItemStack> toStack(String registryName) {
@@ -85,13 +63,15 @@ public class ShopItemsManager {
                 ns = parts[0];
                 path = parts[1];
             }
-            net.minecraft.resources.ResourceLocation rl = new net.minecraft.resources.ResourceLocation(ns, path);
+            // 1.21.1 : évite le ctor signalé "private" -> tryParse
+            ResourceLocation rl = ResourceLocation.tryParse(ns + ":" + path);
+            if (rl == null) return Optional.empty();
+
             Item it = BuiltInRegistries.ITEM.get(rl);
-            if (it == null) return Optional.empty();
+            if (it == null || it == Items.AIR) return Optional.empty();
             return Optional.of(new ItemStack(it));
         } catch (Exception e) {
             return Optional.empty();
         }
     }
 }
-
