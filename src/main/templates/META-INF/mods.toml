@@ -1,24 +1,24 @@
 modLoader="javafml"
-loaderVersion="[4,)" # NeoForge 21.x
-license="MIT"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
 
 [[mods]]
-modId="shopandeconomy"
-version="${file.jarVersion}"
-displayName="Shop & Economy"
-authors="You"
-description="Simple shop & economy mod for 1.21.1 (NeoForge)."
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="${mod_authors}"
+description='''${mod_description}'''
 
-[[dependencies.shopandeconomy]]
+[[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.0,)"
+versionRange="${loader_version_range}"
 ordering="NONE"
 side="BOTH"
 
-[[dependencies.shopandeconomy]]
+[[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.1]"
+versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
