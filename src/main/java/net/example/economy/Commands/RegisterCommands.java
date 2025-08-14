@@ -5,7 +5,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.EventBusSubscriber;
 
-@EventBusSubscriber(modid = "shopandeconomy", bus = EventBusSubscriber.Bus.GAME, value = Dist.DEDICATED_SERVER)
+@EventBusSubscriber(modid = "shopandeconomy", value = Dist.DEDICATED_SERVER)
 public class RegisterCommands {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
