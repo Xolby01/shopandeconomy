@@ -2,12 +2,12 @@
 
 Integration built into MDK structure.
 
-Commands:
+Commands :
 - /topmoney
 - /pay <player> <amount>
 - /shop
 - /trade <player>
 - /accepttrade
 
-Build:
+Build :
 - Push to GitHub (workflow included) or run ./gradlew build locally with Java 21.
