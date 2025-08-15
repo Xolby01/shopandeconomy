@@ -29,3 +29,12 @@ tasks.jar {
         attributes["Implementation-Version"] = archiveVersion.get()
     }
 }
+sourceSets {
+  main {
+    java { exclude 'com/example/examplemod/**' }
+    resources {
+      exclude 'assets/examplemod/**'
+      exclude 'META-INF/mods.toml' // si c'était l’ancien
+    }
+  }
+}
