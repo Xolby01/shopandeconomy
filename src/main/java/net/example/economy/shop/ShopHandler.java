@@ -7,20 +7,26 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.Optional;
+
 public class ShopHandler {
 
-    /** Ouvre (placeholder) l’UI du shop. UI cliquable désactivée tant que le networking n’est pas remis. */
     public static void openShopFor(ServerPlayer player) {
-        player.sendSystemMessage(Component.literal("Shop: interface temporairement désactivée (pas de networking)."));
+        // Placeholder UI (texte) – l’UI graphique viendra après via networking.
+        player.sendSystemMessage(Component.literal("Shop ouvert. Utilise /shop list, /shop buy, /shop sell"));
     }
 
-    /** Prix d’un ItemStack pour la vente (exemple minimal) */
-    public static long getPrice(ItemStack stack) {
-        // Exemple minimal : 1 unité = 1 crédit ; adapte à partir de ta config si besoin
-        return stack.getCount();
+    public static Optional<ShopConfig.ItemEntry> findItem(String categoryOrItem, String maybeItem) {
+        if (EconomyMod.shopConfig == null) return Optional.empty();
+        // /shop buy <item> -> categoryOrItem = item
+        if (maybeItem == null) {
+            return EconomyMod.shopConfig.findItemAnyCategory(categoryOrItem);
+        }
+        // /shop buy <category> <item>
+        return EconomyMod.shopConfig.getCategory(categoryOrItem)
+                .flatMap(cat -> cat.items.stream().filter(i -> i.item.equalsIgnoreCase(maybeItem)).findFirst());
     }
 
-    /** Achat (exemple minimal) : vérifie le solde puis ajoute l’item. */
     public static boolean buyItem(ServerPlayer player, Item item, int amount, long unitPrice) {
         long total = Math.max(0L, unitPrice) * Math.max(1, amount);
         if (!EconomyMod.moneyManager.withdraw(player.getUUID(), total)) {
@@ -33,7 +39,6 @@ public class ShopHandler {
         return true;
     }
 
-    /** Vente (exemple minimal) : enlève exactement `amount` items correspondants puis crédite. */
     public static boolean sellItem(ServerPlayer player, Item item, int amount, long unitPrice) {
         int removed = removeFromInventory(player.getInventory(), item, amount);
         if (removed <= 0) {
@@ -47,7 +52,6 @@ public class ShopHandler {
         return true;
     }
 
-    /** Helper 1.21.1 : suppression d’items par itération d’inventaire (évite la vieille signature removeItem(Item,int)). */
     private static int removeFromInventory(Inventory inv, Item item, int amount) {
         int toRemove = Math.max(1, amount);
         int removed = 0;
@@ -62,5 +66,5 @@ public class ShopHandler {
             }
         }
         return removed;
-        }
+    }
 }
