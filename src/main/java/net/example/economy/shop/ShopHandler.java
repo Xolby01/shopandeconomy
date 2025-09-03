@@ -1,70 +1,75 @@
 package net.example.economy.shop;
 
-import net.example.economy.EconomyMod;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-
-import java.util.Optional;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 public class ShopHandler {
 
     public static void openShopFor(ServerPlayer player) {
-        // Placeholder UI (texte) – l’UI graphique viendra après via networking.
-        player.sendSystemMessage(Component.literal("Shop ouvert. Utilise /shop list, /shop buy, /shop sell"));
+        player.sendSystemMessage(Component.literal("Shop ouvert."));
+        // TODO: open menu/screen via networking if you add a client GUI later
     }
 
-    public static Optional<ShopConfig.ItemEntry> findItem(String categoryOrItem, String maybeItem) {
-        if (EconomyMod.shopConfig == null) return Optional.empty();
-        // /shop buy <item> -> categoryOrItem = item
-        if (maybeItem == null) {
-            return EconomyMod.shopConfig.findItemAnyCategory(categoryOrItem);
-        }
-        // /shop buy <category> <item>
-        return EconomyMod.shopConfig.getCategory(categoryOrItem)
-                .flatMap(cat -> cat.items.stream().filter(i -> i.item.equalsIgnoreCase(maybeItem)).findFirst());
+    public static void openShopFor(ServerPlayer player, String category) {
+        player.sendSystemMessage(Component.literal("Shop ouvert (catégorie: " + category + ")."));
+        // TODO: same as above, filtered
     }
 
-    public static boolean buyItem(ServerPlayer player, Item item, int amount, long unitPrice) {
-        long total = Math.max(0L, unitPrice) * Math.max(1, amount);
-        if (!EconomyMod.moneyManager.withdraw(player.getUUID(), total)) {
-            player.sendSystemMessage(Component.literal("Fonds insuffisants."));
+    public static boolean buyItem(ServerPlayer player, String itemId, int amount) {
+        Item item = ShopItemsManager.getItemById(itemId);
+        if (item == null) {
+            player.sendSystemMessage(Component.literal("Item introuvable: " + itemId));
             return false;
         }
-        player.getInventory().add(new ItemStack(item, amount));
-        EconomyMod.moneyManager.save();
-        player.sendSystemMessage(Component.literal("Achat réussi : " + item.toString() + " x" + amount + " pour " + total));
-        return true;
-    }
-
-    public static boolean sellItem(ServerPlayer player, Item item, int amount, long unitPrice) {
-        int removed = removeFromInventory(player.getInventory(), item, amount);
-        if (removed <= 0) {
-            player.sendSystemMessage(Component.literal("Tu n’as pas cet objet en inventaire."));
+        long price = ShopItemsManager.getBuyPrice(itemId);
+        if (price < 0) {
+            player.sendSystemMessage(Component.literal("Cet item n'est pas achetable."));
             return false;
         }
-        long total = Math.max(0L, unitPrice) * removed;
-        EconomyMod.moneyManager.deposit(player.getUUID(), total);
-        EconomyMod.moneyManager.save();
-        player.sendSystemMessage(Component.literal("Vente réussie : " + item.toString() + " x" + removed + " pour " + total));
-        return true;
+        ItemStack stack = new ItemStack(item, Math.max(1, amount));
+        boolean added = player.addItem(stack);
+        if (added) {
+            player.sendSystemMessage(Component.literal("Achat: " + itemId + " x" + amount + " pour " + (price * amount)));
+            return true;
+        } else {
+            player.sendSystemMessage(Component.literal("Inventaire plein."));
+            return false;
+        }
     }
 
-    private static int removeFromInventory(Inventory inv, Item item, int amount) {
+    public static boolean sellItem(ServerPlayer player, String itemId, int amount) {
+        Item item = ShopItemsManager.getItemById(itemId);
+        if (item == null) {
+            player.sendSystemMessage(Component.literal("Item introuvable: " + itemId));
+            return false;
+        }
+        long price = ShopItemsManager.getSellPrice(itemId);
+        if (price < 0) {
+            player.sendSystemMessage(Component.literal("Cet item n'est pas vendable."));
+            return false;
+        }
+        // remove items from inventory
         int toRemove = Math.max(1, amount);
         int removed = 0;
-        for (int slot = 0; slot < inv.getContainerSize() && toRemove > 0; slot++) {
-            ItemStack s = inv.getItem(slot);
+        for (int i = 0; i < player.getInventory().items.size() && removed < toRemove; i++) {
+            ItemStack s = player.getInventory().items.get(i);
             if (!s.isEmpty() && s.getItem() == item) {
-                int take = Math.min(s.getCount(), toRemove);
+                int take = Math.min(s.getCount(), toRemove - removed);
                 s.shrink(take);
-                if (s.getCount() <= 0) inv.setItem(slot, ItemStack.EMPTY);
-                toRemove -= take;
+                if (s.getCount() <= 0) player.getInventory().items.set(i, ItemStack.EMPTY);
                 removed += take;
             }
         }
-        return removed;
+        if (removed > 0) {
+            player.sendSystemMessage(Component.literal("Vente: " + itemId + " x" + removed + " pour " + (price * removed)));
+            return true;
+        } else {
+            player.sendSystemMessage(Component.literal("Tu n'as pas cet item."));
+            return false;
+        }
     }
 }

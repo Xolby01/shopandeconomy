@@ -3,147 +3,193 @@ package net.example.economy.shop;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
-import net.minecraft.core.registries.BuiltInRegistries;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
 public class ShopItemsManager {
 
-    public static class Category {
-        public String id;
-        public String displayName;
-        public String icon;
-        public List<String> items = new ArrayList<>();
+    public static class Entry {
+        public final String categoryId;
+        public final String itemId;
+        public final long buyPrice;
+        public final long sellPrice;
+
+        public Entry(String categoryId, String itemId, long buyPrice, long sellPrice) {
+            this.categoryId = categoryId;
+            this.itemId = itemId;
+            this.buyPrice = buyPrice;
+            this.sellPrice = sellPrice;
+        }
+    }
+
+    static class Category {
+        String id;
+        String displayName;
+        String icon;
+        Map<String, Price> items = new LinkedHashMap<>();
+    }
+
+    static class Price {
+        long buy;
+        long sell;
+        Price() {}
+        Price(long b, long s) { buy = b; sell = s; }
     }
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Type CAT_LIST_TYPE = new TypeToken<List<Category>>(){}.getType();
-    private static ShopItemsManager INSTANCE;
+    private static final Type TYPE = new TypeToken<Map<String, Category>>(){}.getType();
 
-    public static ShopItemsManager get() {
-        if (INSTANCE == null) INSTANCE = new ShopItemsManager();
-        return INSTANCE;
-    }
+    private static Map<String, Category> categories = new LinkedHashMap<>();
+    private static Path configDir;
+    private static Path jsonFile;
 
-    private final List<Category> categories = new ArrayList<>();
-    private File file;
+    public static void ensureLoaded(MinecraftServer server) {
+        if (jsonFile == null) {
+            configDir = server.getServerDirectory().toPath().resolve("config").resolve("shopandeconomy");
+            jsonFile = configDir.resolve("shop.json");
+        }
+        if (!Files.exists(jsonFile)) {
+            try {
+                Files.createDirectories(configDir);
+                // default content
+                Category tools = new Category();
+                tools.id = "tools"; tools.displayName = "Tools"; tools.icon = "minecraft:iron_pickaxe";
+                tools.items.put("minecraft:iron_pickaxe", new Price(500, 250));
+                tools.items.put("minecraft:diamond_pickaxe", new Price(5000, 2500));
 
-    public void setup(MinecraftServer server) {
-        Path cfgDir = server.getServerDirectory().resolve("config").resolve("shopandeconomy");
-        cfgDir.toFile().mkdirs();
-        file = cfgDir.resolve("shop.json").toFile();
-        if (!file.exists()) {
-            // seed with an example
-            Category tools = new Category();
-            tools.id = "tools";
-            tools.displayName = "Outils";
-            tools.icon = "minecraft:iron_pickaxe";
-            tools.items.add("minecraft:iron_pickaxe");
-            tools.items.add("minecraft:iron_axe");
+                Category food = new Category();
+                food.id = "food"; food.displayName = "Food"; food.icon = "minecraft:bread";
+                food.items.put("minecraft:bread", new Price(10, 5));
+                food.items.put("minecraft:apple", new Price(8, 4));
 
-            Category food = new Category();
-            food.id = "food";
-            food.displayName = "Nourriture";
-            food.icon = "minecraft:bread";
-            food.items.add("minecraft:bread");
-            food.items.add("minecraft:apple");
-
-            categories.clear();
-            categories.add(tools);
-            categories.add(food);
-            save();
-        } else {
+                Map<String, Category> map = new LinkedHashMap<>();
+                map.put(tools.id, tools);
+                map.put(food.id, food);
+                categories = map;
+                save();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else if (categories.isEmpty()) {
             load();
         }
     }
 
-    public void load() {
-        try (FileReader r = new FileReader(file)) {
-            List<Category> list = GSON.fromJson(r, CAT_LIST_TYPE);
-            categories.clear();
-            if (list != null) categories.addAll(list);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void save() {
-        try (FileWriter w = new FileWriter(file)) {
-            GSON.toJson(categories, CAT_LIST_TYPE, w);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void reload() {
+    public static boolean reload(MinecraftServer server) {
+        categories.clear();
+        ensureLoaded(server);
         load();
-    }
-
-    public List<Category> getCategories() {
-        return Collections.unmodifiableList(categories);
-    }
-
-    // Legacy compatibility for ShopMenu
-    public List<String> getItems() {
-        List<String> all = new ArrayList<>();
-        for (Category c : categories) all.addAll(c.items);
-        return all;
-    }
-
-    public boolean addCategory(String id, String displayName, String icon) {
-        if (findCategory(id) != null) return false;
-        Category c = new Category();
-        c.id = id; c.displayName = displayName; c.icon = icon;
-        categories.add(c);
-        save();
         return true;
     }
 
-    public boolean removeCategory(String id) {
-        Category c = findCategory(id);
-        if (c == null) return false;
-        categories.remove(c);
-        save();
-        return true;
+    private static void load() {
+        try (BufferedReader br = Files.newBufferedReader(jsonFile)) {
+            Map<String, Category> map = GSON.fromJson(br, TYPE);
+            if (map != null) {
+                categories = new LinkedHashMap<>(map);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public boolean addItemToCategory(String categoryId, String itemId) {
-        Category c = findCategory(categoryId);
-        if (c == null) return false;
-        if (!isValidItem(itemId)) return false;
-        if (!c.items.contains(itemId)) c.items.add(itemId);
-        save();
-        return true;
+    public static void save() {
+        try (BufferedWriter bw = Files.newBufferedWriter(jsonFile)) {
+            GSON.toJson(categories, TYPE, bw);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public boolean removeItemFromCategory(String categoryId, String itemId) {
-        Category c = findCategory(categoryId);
-        if (c == null) return false;
-        boolean ok = c.items.remove(itemId);
-        if (ok) save();
-        return ok;
+    public static List<Entry> listAll() {
+        List<Entry> list = new ArrayList<>();
+        for (Category c : categories.values()) {
+            for (Map.Entry<String, Price> e : c.items.entrySet()) {
+                list.add(new Entry(c.id, e.getKey(), e.getValue().buy, e.getValue().sell));
+            }
+        }
+        return list;
     }
 
-    private Category findCategory(String id) {
-        for (Category c : categories) if (c.id.equalsIgnoreCase(id)) return c;
-        return null;
+    public static List<Entry> listByCategory(String categoryId) {
+        Category c = categories.get(categoryId);
+        if (c == null) return Collections.emptyList();
+        List<Entry> list = new ArrayList<>();
+        for (Map.Entry<String, Price> e : c.items.entrySet()) {
+            list.add(new Entry(c.id, e.getKey(), e.getValue().buy, e.getValue().sell));
+        }
+        return list;
     }
 
-    private boolean isValidItem(String id) {
+    public static Item getItemById(String id) {
         try {
             ResourceLocation rl = ResourceLocation.parse(id);
-            return BuiltInRegistries.ITEM.getOptional(rl).isPresent();
+            return BuiltInRegistries.ITEM.get(rl);
         } catch (Exception ex) {
-            return false;
+            return null;
         }
+    }
+
+    public static long getBuyPrice(String itemId) {
+        for (Category c : categories.values()) {
+            Price p = c.items.get(itemId);
+            if (p != null) return p.buy;
+        }
+        return -1;
+    }
+
+    public static long getSellPrice(String itemId) {
+        for (Category c : categories.values()) {
+            Price p = c.items.get(itemId);
+            if (p != null) return p.sell;
+        }
+        return -1;
+    }
+
+    public static boolean addCategory(String id, String displayName, String icon) {
+        if (categories.containsKey(id)) return false;
+        Category c = new Category();
+        c.id = id; c.displayName = displayName; c.icon = icon;
+        categories.put(id, c);
+        save();
+        return true;
+    }
+
+    public static boolean removeCategory(String id) {
+        Category prev = categories.remove(id);
+        if (prev != null) {
+            save();
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean addItem(String category, String itemId, long buy, long sell) {
+        Category c = categories.get(category);
+        if (c == null) return false;
+        c.items.put(itemId, new Price(buy, sell));
+        save();
+        return true;
+    }
+
+    public static boolean removeItem(String category, String itemId) {
+        Category c = categories.get(category);
+        if (c == null) return false;
+        Price prev = c.items.remove(itemId);
+        if (prev != null) {
+            save();
+            return true;
+        }
+        return false;
     }
 }

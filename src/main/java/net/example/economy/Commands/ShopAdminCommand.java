@@ -2,7 +2,6 @@ package net.example.economy.Commands;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
 import net.example.economy.shop.ShopItemsManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -19,12 +18,11 @@ public class ShopAdminCommand {
                         .then(Commands.argument("displayName", StringArgumentType.string())
                             .then(Commands.argument("icon", StringArgumentType.string())
                                 .executes(ctx -> {
-                                    var id = StringArgumentType.getString(ctx, "id");
-                                    var dn = StringArgumentType.getString(ctx, "displayName");
-                                    var icon = StringArgumentType.getString(ctx, "icon");
-                                    boolean ok = ShopItemsManager.get().addCategory(id, dn, icon);
-                                    if (ok) ctx.getSource().sendSuccess(() -> Component.literal("Catégorie ajoutée: " + id), false);
-                                    else ctx.getSource().sendFailure(Component.literal("Impossible d'ajouter la catégorie (existe déjà?)"));
+                                    String id = StringArgumentType.getString(ctx, "id");
+                                    String dn = StringArgumentType.getString(ctx, "displayName");
+                                    String icon = StringArgumentType.getString(ctx, "icon");
+                                    boolean ok = ShopItemsManager.addCategory(id, dn, icon);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(ok ? "Catégorie ajoutée." : "Échec d'ajout (déjà existante?)"), false);
                                     return ok ? 1 : 0;
                                 })
                             )
@@ -34,10 +32,9 @@ public class ShopAdminCommand {
                 .then(Commands.literal("removeCategory")
                     .then(Commands.argument("id", StringArgumentType.string())
                         .executes(ctx -> {
-                            var id = StringArgumentType.getString(ctx, "id");
-                            boolean ok = ShopItemsManager.get().removeCategory(id);
-                            if (ok) ctx.getSource().sendSuccess(() -> Component.literal("Catégorie supprimée: " + id), false);
-                            else ctx.getSource().sendFailure(Component.literal("Catégorie introuvable: " + id));
+                            String id = StringArgumentType.getString(ctx, "id");
+                            boolean ok = ShopItemsManager.removeCategory(id);
+                            ctx.getSource().sendSuccess(() -> Component.literal(ok ? "Catégorie supprimée." : "Échec (introuvable)"), false);
                             return ok ? 1 : 0;
                         })
                     )
@@ -46,11 +43,10 @@ public class ShopAdminCommand {
                     .then(Commands.argument("category", StringArgumentType.string())
                         .then(Commands.argument("item", StringArgumentType.string())
                             .executes(ctx -> {
-                                var cat = StringArgumentType.getString(ctx, "category");
-                                var item = StringArgumentType.getString(ctx, "item");
-                                var ok = ShopItemsManager.get().addItemToCategory(cat, item);
-                                if (ok) ctx.getSource().sendSuccess(() -> Component.literal("Ajout de l'item " + item + " à " + cat), false);
-                                else ctx.getSource().sendFailure(Component.literal("Impossible d'ajouter l'item."));
+                                String cat = StringArgumentType.getString(ctx, "category");
+                                String item = StringArgumentType.getString(ctx, "item");
+                                boolean ok = ShopItemsManager.addItem(cat, item, 100, 50);
+                                ctx.getSource().sendSuccess(() -> Component.literal(ok ? "Item ajouté." : "Échec d'ajout"), false);
                                 return ok ? 1 : 0;
                             })
                         )
@@ -60,11 +56,10 @@ public class ShopAdminCommand {
                     .then(Commands.argument("category", StringArgumentType.string())
                         .then(Commands.argument("item", StringArgumentType.string())
                             .executes(ctx -> {
-                                var cat = StringArgumentType.getString(ctx, "category");
-                                var item = StringArgumentType.getString(ctx, "item");
-                                var ok = ShopItemsManager.get().removeItemFromCategory(cat, item);
-                                if (ok) ctx.getSource().sendSuccess(() -> Component.literal("Suppression de l'item " + item + " de " + cat), false);
-                                else ctx.getSource().sendFailure(Component.literal("Item ou catégorie introuvable."));
+                                String cat = StringArgumentType.getString(ctx, "category");
+                                String item = StringArgumentType.getString(ctx, "item");
+                                boolean ok = ShopItemsManager.removeItem(cat, item);
+                                ctx.getSource().sendSuccess(() -> Component.literal(ok ? "Item supprimé." : "Échec (introuvable)"), false);
                                 return ok ? 1 : 0;
                             })
                         )
@@ -72,16 +67,11 @@ public class ShopAdminCommand {
                 )
                 .then(Commands.literal("reload")
                     .executes(ctx -> {
-                        ShopItemsManager.get().reload();
-                        ctx.getSource().sendSuccess(() -> Component.literal("Shop rechargé depuis le JSON."), false);
-                        return 1;
+                        boolean ok = ShopItemsManager.reload(ctx.getSource().getServer());
+                        ctx.getSource().sendSuccess(() -> Component.literal(ok ? "Shop rechargé." : "Échec de rechargement"), false);
+                        return ok ? 1 : 0;
                     })
                 )
         );
-    }
-
-    private static int fail(CommandContext<CommandSourceStack> ctx, String msg) {
-        ctx.getSource().sendFailure(Component.literal(msg));
-        return 0;
     }
 }
