@@ -1,18 +1,19 @@
 package net.example.economy.Commands;
 
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.bus.api.SubscribeEvent;
+import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.commands.CommandSourceStack;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-@EventBusSubscriber(modid = "shopandeconomy", value = Dist.DEDICATED_SERVER)
+@Mod.EventBusSubscriber(modid = "shopandeconomy", bus = Mod.EventBusSubscriber.Bus.GAME, value = Dist.DEDICATED_SERVER)
 public class RegisterCommands {
+
     @SubscribeEvent
-    public static void onRegisterCommands(RegisterCommandsEvent event) {
-        PayCommand.register(event.getDispatcher());
-        TopMoneyCommand.register(event.getDispatcher());
-        ShopCommand.register(event.getDispatcher());
-        TradeCommand.register(event.getDispatcher());
-        AcceptTradeCommand.register(event.getDispatcher());
+    public static void onRegisterCommands(final RegisterCommandsEvent event) {
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+        ShopCommand.register(dispatcher);
+        ShopAdminCommand.register(dispatcher);
     }
 }
